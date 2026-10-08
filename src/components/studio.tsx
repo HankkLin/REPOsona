@@ -10,7 +10,7 @@ import { personaMarkdown } from "@/server/persona-markdown";
 type Message = { role: "user" | "avatar"; text: string; citations?: Answer["citations"] };
 const progressLabels: Record<ImportStage, string> = { readme: "Read the repository README", persona: "Discover its personality", embeddings: "Prepare repository knowledge", avatar: "Create its character portrait", save: "Open your studio" };
 async function api<T>(url: string, body?: unknown): Promise<T> {
-  const response = await fetch(url, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) } : { cache: "no-store" });
+  const response = await fetch(url, body ? { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body), signal: (body as { action?: string }).action === "session" ? AbortSignal.timeout(25000) : undefined } : { cache: "no-store" });
   const result = await response.json();
   if (!response.ok) throw new Error(result.error || "Request failed. Please retry.");
   return result;

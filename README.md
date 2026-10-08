@@ -2,7 +2,9 @@
 
 Give a GitHub repository an original character, a portrait, and a voice. Import a repository with visible progress, refine and confirm its character, then join a video meeting to ask questions grounded in its README.
 
-Characters default to original non-human mascots, with their form, colors and signature details inspired by repository themes. Image refinements can reinterpret older human portraits as mascots; human form requires an explicit appearance request.
+Characters are original non-human mascots, with their form, colors and signature details inspired by repository themes. Image refinements reinterpret older human portraits as mascots; all generated characters remain non-human.
+
+Live image generation uses `prompts/nano_banana_prompt.md`, fills in the target repository, and includes “make sure not human.” This applies to initial portraits and refinements.
 
 ## Run locally
 
@@ -87,6 +89,12 @@ saved to ignored `.data/logs/imports.jsonl`. Each entry includes a request ID,
 normalized repository URL, stage (README, persona, embeddings, avatar, or save), outcome,
 and elapsed time. Credentials, session cookies, prompts, and README content are
 not logged. These diagnostics track requests and failures, not provider billing.
+
+Meeting startup diagnostics appear in the browser console under `[reactor-meeting]`.
+They include an attempt ID, startup stage, elapsed time, transport status, and SDK
+error code, without tokens, images, prompts, or answer text. Startup waits are
+bounded and show a retry message when a stage times out. Joining configures LTX;
+the portrait remains still until you ask a question and start a video answer.
 
 ```bash
 npm test

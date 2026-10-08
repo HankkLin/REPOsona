@@ -6,6 +6,8 @@ Target Repository: [INSERT GITHUB REPO URL / NAME HERE]
 
 Translate the project's technical identity (its philosophy, strengths, community culture, and architectural quirks) into a living character with warmth, humor, and heart.
 
+make sure not human. Choose an unmistakably non-human animal, creature, robot, or animated object; do not render a human or a person in costume.
+
 Produce both the text profile below AND generate a high-detail image of the character natively in your response:
 
 ---

@@ -39,7 +39,12 @@ describe("provider contracts", () => {
     await createAvatar(await project(), "");
     const body = JSON.parse(mock.mock.calls[0][1].body);
     expect(body.contents[0].parts).toHaveLength(1);
-    expect(body.systemInstruction.parts[0].text).toContain("Create a persona with an accompanying image");
+    const prompt = body.systemInstruction.parts[0].text;
+    expect(prompt).toContain("Act as an expert character designer");
+    expect(prompt).toContain("Target Repository: https://github.com/acme/toolkit");
+    expect(prompt).not.toContain("[INSERT GITHUB REPO URL / NAME HERE]");
+    expect(prompt).toContain("make sure not human");
+    expect(prompt).toContain("warm three-point studio lighting");
     expect(JSON.parse(body.contents[0].parts[0].text).repository.readme).toContain("demo README");
   });
   it("rejects model citations outside the ingested README", async () => {

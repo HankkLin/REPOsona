@@ -3,6 +3,17 @@
 This file provides instructions for AI coding agents working in this repository, including OpenAI Codex, Claude Code, and similar tools.
 
 ## Project Overview
+This project turns GitHub repositories into interactive avatars. Each repository is represented as a distinct persona whose knowledge is grounded in the repository's README, documentation, issues, pull requests, commit history, and codebase. The avatar should explain not only how the repository works, but also its design philosophy, conventions, boundaries, and historical decisions.
+The system may infer a repository-specific “Repo DNA” containing traits such as communication style, technical philosophy, stability preference, strictness, and community culture. These traits should influence how the avatar speaks without overriding factual grounding.
+The core product goal is to make interacting with a repository feel like speaking with the repository itself, rather than using a generic documentation chatbot.
+Key product concepts include:
+- Repo Avatar: one interactive avatar per GitHub repository
+- Repo DNA: inferred personality and communication style
+- Repo Convictions: what the project deliberately supports, rejects, or considers out of scope
+- Grounded Q&A: answers sourced from repository content
+- Repo Council: multiple repository avatars discussing compatibility, architecture, and responsibility for a user-defined system
+Avatar personality must never fabricate repository facts. Factual accuracy and traceability take priority over characterization.
+
 
 Before making changes, inspect the repository and determine:
 

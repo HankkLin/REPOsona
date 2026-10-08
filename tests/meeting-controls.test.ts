@@ -16,10 +16,11 @@ it("keeps the voice control visible while connecting, without requesting microph
   expect(markup).toContain("Your microphone stays off");
 });
 
-it("starts camera and screen controls off with no preview streams", () => {
-  const markup = renderToStaticMarkup(createElement(MeetingTools, { children: null, disabled: false, onError: vi.fn() }));
-  expect(markup).toContain("Camera off");
-  expect(markup).toContain("Share screen");
+it("keeps meeting controls without camera or screen sharing", () => {
+  const markup = renderToStaticMarkup(createElement(MeetingTools, { children: createElement("button", null, "Leave") }));
+  expect(markup).toContain("Leave");
+  expect(markup).not.toContain("Camera off");
+  expect(markup).not.toContain("Share screen");
   expect(markup).not.toContain("<video");
 });
 

@@ -959,13 +959,6 @@ footer span { font-family: var(--font-mono); font-size: 11px; }
 .meeting-room .call-transcript[hidden] { display: none; }
 .meeting-room .call-transcript .messages { max-height: 62vh; overflow: auto; }
 .meeting-room .call-transcript .card-label { flex-direction: column; align-items: flex-start; gap: 4px; }
-.meeting-local-tiles:empty { display: none; }
-.meeting-local-tiles { display: flex; justify-content: flex-end; gap: 12px; }
-.local-preview { position: relative; width: 240px; max-width: 48%; aspect-ratio: 16/9; overflow: hidden; border: 1px solid #5f6368; border-radius: 12px; background: #303134; }
-.local-preview video { width: 100%; height: 100%; object-fit: contain; }
-.local-preview.mirror video { transform: scaleX(-1); object-fit: cover; }
-.local-preview span { position: absolute; left: 0; right: 0; bottom: 0; padding: 5px 8px; background: rgb(32 33 36 / .85); font-size: 10px; }
-.meeting-room .media-note { margin: 0; text-align: center; color: #bdc1c6; font-size: 12px; }
 @media (hover: hover) and (pointer: fine) {
   .meeting-control:hover:not(:disabled) { background: #52565a; }
   .meeting-control.microphone-button:hover:not(:disabled), .meeting-control[aria-pressed=true]:hover:not(:disabled) { background: #c2d7fa; }

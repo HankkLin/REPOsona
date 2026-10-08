@@ -11,11 +11,12 @@ it("includes user voice direction within the Reactor prompt limit", async () => 
   expect(prompt.length).toBeLessThanOrEqual(800);
   expect(prompt).toContain("non-human");
   expect(prompt).not.toContain(persona.speakingStyle);
+  expect(prompt).toBe(prompt.trim());
 });
 
 it("does not reset the voice on every answer and updates pace when the direction changes", async () => {
   const persona = await createPersona({ owner: "acme", name: "widget", url: "https://github.com/acme/widget", readme: "# Widget", sourceUrl: "", truncated: false }, true);
-  const model = { setPrompt: vi.fn().mockImplementation(async ({ prompt }) => ({ type: "prompt_accepted", prompt })), setWpm: vi.fn().mockImplementation(async ({ wpm }) => ({ type: "wpm_accepted", wpm })) };
+  const model = { setPrompt: vi.fn().mockImplementation(async ({ prompt }) => ({ type: "prompt_accepted", prompt: prompt.trim() })), setWpm: vi.fn().mockImplementation(async ({ wpm }) => ({ type: "wpm_accepted", wpm })) };
   const settings = new AvatarVoiceSettings();
   await settings.apply(model, persona); await settings.apply(model, persona);
   expect(model.setPrompt).toHaveBeenCalledOnce(); expect(model.setWpm).toHaveBeenCalledOnce();

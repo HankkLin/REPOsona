@@ -244,7 +244,7 @@ export function Studio({ demo }: { demo: boolean }) {
         <form className="chat-input call-ask" onSubmit={e => { e.preventDefault(); void ask(); }}><input aria-label="Question about the repository" value={question} onChange={e => setQuestion(e.target.value)} placeholder={reactorSession && !callReady ? "Connecting your avatar…" : `Ask ${project.persona.name} anything about its README…`} maxLength={2000} disabled={questionDisabled} /><button disabled={questionDisabled || !question.trim()}>{thinking ? "Answering…" : "Ask ↗"}</button></form>
 
         <div className="call-controls">
-          <MeetingTools key={`${project.id}-${reactorSession ? "live" : meetingEnded ? "ended" : "lobby"}`} disabled={meetingEnded} onError={setError}>
+          <MeetingTools key={`${project.id}-${reactorSession ? "live" : meetingEnded ? "ended" : "lobby"}`}>
             <MicrophoneQuestion projectId={project.id} disabled={project.demo || meetingEnded || questionDisabled || !reactorSession || !callReady} onActivity={setMicActive} onStart={async () => { setError(""); stopSpeech(); await reactor.current?.stop(); }} onQuestion={text => void ask(text)} onError={setError} />
             <button type="button" className="meeting-control" aria-pressed={muted} onClick={() => setMuted(value => !value)}><CallIcon name="speaker" /><span>{muted ? "Sound off" : "Sound on"}</span></button>
             <button type="button" className="meeting-control" aria-pressed={captions} onClick={() => setCaptions(value => !value)}><CallIcon name="captions" /><span>Captions</span></button>

@@ -3,7 +3,7 @@ import type { Persona } from "@/domain/schemas";
 export function avatarDeliveryPrompt(persona: Persona): string {
   const casting = persona.voice.casting || persona.voice.direction?.trim() || `The speaker has a ${persona.voice.tone} voice.`;
   const legacyDelivery = persona.voice.casting || persona.voice.direction?.trim() ? "" : persona.speakingStyle;
-  return `${casting} The non-human repository mascot speaks directly to the camera in ${persona.voice.language}, with subtle gestures. ${legacyDelivery}`.slice(0, 800);
+  return `${casting} The non-human repository mascot speaks directly to the camera in ${persona.voice.language}, with subtle gestures. ${legacyDelivery}`.slice(0, 800).trim();
 }
 
 export function avatarWpm(persona: Persona): number {

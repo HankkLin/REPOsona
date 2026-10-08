@@ -41,7 +41,11 @@ export function Studio({ demo }: { demo: boolean }) {
   }, []);
   useEffect(() => {
     const id = localStorage.getItem("human-readme-project");
-    if (id) api<ViewProject>(`/api/projects/${id}`).then(p => { setProject(p); setStep(startStep(p)); }).catch(() => localStorage.removeItem("human-readme-project"));
+    if (id) api<ViewProject>(`/api/projects/${id}`).then(p => { setProject(p); setStep(startStep(p)); }).catch(e => {
+      // Forget the saved project only when the server says it is gone; keep it through transient errors.
+      if (e instanceof Error && e.message.startsWith("Project not found")) localStorage.removeItem("human-readme-project");
+      else setError("Couldn't reopen your project. Refresh to try again.");
+    });
     const player = audio.current;
     return () => { player?.pause(); window.speechSynthesis?.cancel(); };
   }, []);

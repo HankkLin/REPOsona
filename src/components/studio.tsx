@@ -172,7 +172,7 @@ export function Studio({ demo }: { demo: boolean }) {
     });
   }
   return <main aria-busy={!!busy}>
-    <header className="topbar"><button className="brand" disabled={!!busy || micActive} onClick={() => { stopSpeech(); setProject(undefined); closeReactor(); localStorage.removeItem("human-readme-project"); }}>human<span>readme</span><sup>✦</sup></button><span className={`mode ${demo ? "demo" : ""}`}>{demo ? "Demo playground" : "Live studio"}</span></header>
+    <header className="topbar"><button className="brand" disabled={!!busy || micActive} onClick={() => { stopSpeech(); setProject(undefined); closeReactor(); localStorage.removeItem("human-readme-project"); }}>REPO<span>sona</span><sup>✦</sup></button><span className={`mode ${demo ? "demo" : ""}`}>{demo ? "Demo playground" : "Live studio"}</span></header>
     {!project ? <section className="hero">
       <IntroChat />
       <div className="eyebrow">YOUR CODE HAS A CHARACTER</div>
@@ -274,6 +274,6 @@ export function Studio({ demo }: { demo: boolean }) {
       </div>}
     </section>}
     {(busy || error) && <div className={`status ${error ? "error" : ""}`} role={error ? "alert" : "status"} aria-live="polite">{busy && <span className="spinner" />}<div>{busy || error}{busy && <small>{elapsed}s elapsed · Your request is being processed.</small>}</div></div>}
-    <footer>Every repository has a story. Give yours a voice.<span>Human README · Meet your code</span></footer>
+    <footer>Every repository has a story. Give yours a voice.<span>REPOsona · Meet your code</span></footer>
   </main>;
 }

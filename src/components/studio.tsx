@@ -110,6 +110,6 @@ export function Studio({ demo }: { demo: boolean }) {
       </article>
     </section>}
     {(busy || error) && <div className={`status ${error ? "error" : ""}`} role={error ? "alert" : "status"}>{busy || error}</div>}
-    <footer>Every repository has a story. Give yours a voice.<span>Built around Octocat · Human README</span></footer>
+    <footer>Every repository has a story. Give yours a voice.<span>Human README</span></footer>
   </main>;
 }

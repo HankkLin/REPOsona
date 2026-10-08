@@ -76,6 +76,12 @@ red-polo.png                    # Existing Octocat reference, preserved
 
 ## Checks
 
+Local repository import diagnostics are printed in the development terminal and
+saved to ignored `.data/logs/imports.jsonl`. Each entry includes a request ID,
+normalized repository URL, stage (README, persona, embeddings, or save), outcome,
+and elapsed time. Credentials, session cookies, prompts, and README content are
+not logged. These diagnostics track requests and failures, not provider billing.
+
 ```bash
 npm test
 npm run typecheck

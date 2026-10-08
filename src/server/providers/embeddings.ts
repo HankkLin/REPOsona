@@ -4,7 +4,7 @@ const vectorSchema = z.array(z.number().finite()).length(768).refine(v => v.some
 export async function embedTexts(texts: string[], taskType: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY", model: string) {
   if (!texts.length) return [];
   if (!process.env.GEMINI_API_KEY) throw new Error("Configure GEMINI_API_KEY for repository retrieval.");
-  const requests = texts.map(text => ({ model: `models/${model}`, content: { parts: [{ text }] }, embedContentConfig: { taskType, outputDimensionality: 768 } }));
+  const requests = texts.map(text => ({ model: `models/${model}`, content: { parts: [{ text }] }, taskType, outputDimensionality: 768 }));
   const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:batchEmbedContents`, {
     method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
     body: JSON.stringify({ requests }), signal: AbortSignal.timeout(60000),

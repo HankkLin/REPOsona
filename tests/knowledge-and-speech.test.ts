@@ -28,7 +28,9 @@ describe("repository retrieval", () => {
     const p = await fixture(); const knowledge = await createKnowledgeBase(p.repository, false);
     expect(knowledge.embeddingModel).toBe("configured-embedding-model"); expect(knowledge.chunks[0].embedding).toEqual(vector());
     const body = JSON.parse(mock.mock.calls[0][1].body);
-    expect(body.requests[0].embedContentConfig).toEqual({ taskType: "RETRIEVAL_DOCUMENT", outputDimensionality: 768 });
+    expect(body.requests[0].taskType).toBe("RETRIEVAL_DOCUMENT");
+    expect(body.requests[0].outputDimensionality).toBe(768);
+    expect(body.requests[0]).not.toHaveProperty("embedContentConfig");
   });
   it("retrieves from only the current project's index using its stored model", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
@@ -47,6 +49,11 @@ describe("repository retrieval", () => {
     await expect(retrieveEvidence(p, "question")).rejects.toThrow("stale");
     vi.stubEnv("GEMINI_API_KEY", "test-key"); vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ embeddings: [{ values: [0] }] })));
     await expect(embedTexts(["hello"], "RETRIEVAL_QUERY", "model")).rejects.toThrow("invalid repository embeddings");
+  });
+  it("rejects the default 3072-dimensional response instead of persisting an incompatible index", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json({ embeddings: [{ values: Array.from({ length: 3072 }, () => 1) }] })));
+    await expect(embedTexts(["hello"], "RETRIEVAL_DOCUMENT", "model")).rejects.toThrow("invalid repository embeddings");
   });
   it.each(["flash", "pro"] as const)("routes %s answers to the configured Google model with retrieved evidence", async mode => {
     vi.stubEnv("GEMINI_API_KEY", "test-key"); vi.stubEnv("GEMINI_TEXT_MODEL", "configured-flash"); vi.stubEnv("GEMINI_PRO_MODEL", "configured-pro");

@@ -36,7 +36,7 @@ describe("demo journey", () => {
     const project = await fixture();
     await expect(createReactorSession(project)).rejects.toThrow("Approve");
     const avatar = await createAvatar(project, "A teal hoodie");
-    expect(avatar.image).toMatch(/^data:image\/png;base64,/);
+    expect(avatar.image).toMatch(/^data:image\/svg\+xml;base64,/);
     project.avatars.push(avatar); project.approvedAvatarId = avatar.id;
     expect(await createReactorSession(project)).toEqual({ mode: "demo" });
   });

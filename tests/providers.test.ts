@@ -20,18 +20,27 @@ describe("provider contracts", () => {
     expect(repo.truncated).toBe(true); expect(repo.readme.length).toBe(60000);
     expect(repo.sourceUrl).toContain("Readme.rst"); expect(mock.mock.calls[0][0]).toBe("https://api.github.com/repos/acme/toolkit/readme");
   });
-  it("sends Octocat identity and previous version, skips thinking images", async () => {
+  it("uses only the previous character for refinement and skips thinking images", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");
     const mock = vi.fn().mockResolvedValue(Response.json({ candidates: [{ content: { parts: [{ thought: true, inlineData: { mimeType: "image/png", data: "thinking" } }, { inlineData: { mimeType: "image/png", data: "final" } }] } }] }));
     vi.stubGlobal("fetch", mock);
     const p = await project(); p.avatars = [{ id: "previous", image: "data:image/png;base64,previous", suggestion: "blue hoodie", createdAt: "" }];
     expect((await createAvatar(p, "add glasses")).image).toBe("data:image/png;base64,final");
     const body = JSON.parse(mock.mock.calls[0][1].body);
-    expect(body.contents[0].parts).toHaveLength(3);
-    expect(body.contents[0].parts[1].inlineData.data).toMatch(/^iVBOR/);
-    expect(body.contents[0].parts[2].inlineData.data).toBe("previous");
+    expect(body.contents[0].parts).toHaveLength(2);
+    expect(body.contents[0].parts[1].inlineData.data).toBe("previous");
     expect(body.contents[0].parts[0].text).toContain("blue hoodie");
     expect(mock.mock.calls[0][0]).toContain("gemini-nano-banana-2.1");
+  });
+  it("creates the initial character without a mascot reference", async () => {
+    vi.stubEnv("GEMINI_API_KEY", "test-key");
+    const mock = vi.fn().mockResolvedValue(Response.json({ candidates: [{ content: { parts: [{ inlineData: { mimeType: "image/png", data: "final" } }] } }] }));
+    vi.stubGlobal("fetch", mock);
+    await createAvatar(await project(), "");
+    const body = JSON.parse(mock.mock.calls[0][1].body);
+    expect(body.contents[0].parts).toHaveLength(1);
+    expect(body.systemInstruction.parts[0].text).toContain("Create a persona with an accompanying image");
+    expect(JSON.parse(body.contents[0].parts[0].text).repository.readme).toContain("demo README");
   });
   it("rejects model citations outside the ingested README", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key");

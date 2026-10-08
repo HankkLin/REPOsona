@@ -15,6 +15,16 @@ Key product concepts include:
 Avatar personality must never fabricate repository facts. Factual accuracy and traceability take priority over characterization.
 
 
+## Required AI Providers
+
+- Reactor is required for avatar rendering and animation. Documentation: https://docs.reactor.inc/llms.txt. Verify model capabilities against official documentation.
+- All other application AI models must be Google models. Use Gemini Flash for persona generation and everyday answers, Gemini Pro for explicitly selected deeper reasoning, Google text embeddings for repository-scoped retrieval, Gemini TTS for read-aloud speech, and Nano Banana for avatar images.
+- Do not add non-Google AI providers or automatic fallbacks unless the user explicitly changes this requirement.
+- Every repository avatar keeps a separate knowledge base and stable voice/personality. Retrieved repository evidence supplies facts; persona instructions supply style.
+- Keep exact model IDs configurable and verify them against Google's official model catalog. Credentials must remain server-side and excluded from Git.
+- LTX currently takes an image and a script and produces its own synchronized voice/video. Do not claim that Gemini TTS can drive its lips: no external-audio input is documented. Gemini TTS is the separate read-aloud path until Reactor supports a verified audio-driven avatar integration.
+- Use stock voices initially; do not assume or introduce voice cloning. Browser speech is permitted only in the explicitly labeled demo and is not a live-model fallback.
+
 Before making changes, inspect the repository and determine:
 
 - What the project does

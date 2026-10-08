@@ -372,3 +372,17 @@ Assume uncommitted changes may belong to the user.
 Do not:
 
 - Reset them
+
+---
+
+# UI Skills
+
+`.claude/skills/` vendors Emil Kowalski's design-engineering skills (MIT, [emilkowalski/skills](https://github.com/emilkowalski/skills) @ `e8a175d`). Use them for frontend work:
+
+- `emil-design-eng`: UI polish, easing, durations, press feedback
+- `review-animations`, `improve-animations`, `find-animation-opportunities`, `animate`, `animation-vocabulary`: motion
+- `mobile-native`: touch, safe areas, input zoom
+- `break-ui`: worst-case data stress tests
+- `apple-design`, `prototype`, `pick-ui-library`, `ask-sonner`: design direction and libraries
+
+The React Native and Swift skills are omitted because this project does not use them.

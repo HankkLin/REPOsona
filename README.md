@@ -1,4 +1,4 @@
-# Human README
+# REPOsona
 
 Give a GitHub repository an original character, a portrait, and a voice. Import a repository with visible progress, refine and confirm its character, then join a video meeting to ask questions grounded in its README.
 

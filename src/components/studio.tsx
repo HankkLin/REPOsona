@@ -47,7 +47,8 @@ export function Studio({ demo }: { demo: boolean }) {
   const [captions, setCaptions] = useState(true);
   const [caption, setCaption] = useState("");
   const [muted, setMuted] = useState(false);
-  const [showTranscript, setShowTranscript] = useState(false);
+  // The right side of the meeting shows one panel at a time, like a video call: the chat or the settings.
+  const [panel, setPanel] = useState<"chat" | "settings" | null>("chat");
   const [meetingEnded, setMeetingEnded] = useState(false);
   const call = useRef<HTMLDivElement>(null);
   const reactor = useRef<ReactorHandle>(null);
@@ -228,7 +229,7 @@ export function Studio({ demo }: { demo: boolean }) {
         </div>
       </div>}
 
-      {step === "talk" && project.approvedAvatarId && <div ref={call} className={`call meeting-room ${showTranscript ? "with-transcript" : ""}`}>
+      {step === "talk" && project.approvedAvatarId && <div ref={call} className={`call meeting-room ${panel ? "with-panel" : ""}`}>
         <div className="meeting-heading"><div><span className="eyebrow">REPOSITORY MEETING</span><h2>In conversation with {project.persona.name}</h2></div><span className="meeting-badge">{project.demo ? "Demo preview" : meetingEnded ? "Meeting ended" : reactorState === "error" ? "Connection failed" : reactorSession && callReady ? "Live · Reactor" : "Connecting to Reactor…"}</span></div>
         <div className={`call-stage ${talking ? "speaking" : ""} ${reactorSession ? "live" : ""} ${meetingEnded ? "ended" : ""}`}>
           {reactorSession
@@ -241,33 +242,35 @@ export function Studio({ demo }: { demo: boolean }) {
           {!reactorSession && !project.demo && !meetingEnded && <div className="meeting-lobby" role="status">{busy.startsWith("Joining") ? <><span className="spinner" />Starting your live avatar…</> : "Your live avatar will appear here once connected."}</div>}
         </div>
 
-        <form className="chat-input call-ask" onSubmit={e => { e.preventDefault(); void ask(); }}><input aria-label="Question about the repository" value={question} onChange={e => setQuestion(e.target.value)} placeholder={reactorSession && !callReady ? "Connecting your avatar…" : `Ask ${project.persona.name} anything about its README…`} maxLength={2000} disabled={questionDisabled} /><button disabled={questionDisabled || !question.trim()}>{thinking ? "Answering…" : "Ask ↗"}</button></form>
-
         <div className="call-controls">
           <MeetingTools key={`${project.id}-${reactorSession ? "live" : meetingEnded ? "ended" : "lobby"}`}>
             <MicrophoneQuestion projectId={project.id} disabled={project.demo || meetingEnded || questionDisabled || !reactorSession || !callReady} onActivity={setMicActive} onStart={async () => { setError(""); stopSpeech(); await reactor.current?.stop(); }} onQuestion={text => void ask(text)} onError={setError} />
             <button type="button" className="meeting-control" aria-pressed={muted} onClick={() => setMuted(value => !value)}><CallIcon name="speaker" /><span>{muted ? "Sound off" : "Sound on"}</span></button>
             <button type="button" className="meeting-control" aria-pressed={captions} onClick={() => setCaptions(value => !value)}><CallIcon name="captions" /><span>Captions</span></button>
-            <button type="button" className="meeting-control" aria-pressed={showTranscript} aria-controls="meeting-transcript" onClick={() => setShowTranscript(value => !value)}><CallIcon name="chat" /><span>Transcript</span></button>
+            <button type="button" className="meeting-control" aria-pressed={panel === "chat"} aria-controls="meeting-chat" onClick={() => setPanel(value => value === "chat" ? null : "chat")}><CallIcon name="chat" /><span>Chat</span></button>
+            <button type="button" className="meeting-control" aria-pressed={panel === "settings"} aria-controls="meeting-settings" onClick={() => setPanel(value => value === "settings" ? null : "settings")}><CallIcon name="settings" /><span>Settings</span></button>
             <button type="button" className="meeting-control" onClick={() => { void (document.fullscreenElement ? document.exitFullscreen() : call.current?.requestFullscreen())?.catch(() => setError("Fullscreen is unavailable in this browser.")); }}><CallIcon name="fullscreen" /><span>Fullscreen</span></button>
             <button type="button" className="meeting-control" disabled={!!busy || micActive || !talking} onClick={() => void run("Stopping the avatar’s response…", async () => { stopSpeech(); await reactor.current?.stop(); })}><CallIcon name="stop" /><span>Stop answer</span></button>
             <button type="button" className="meeting-control meeting-leave" disabled={!!busy || micActive || meetingEnded} onClick={() => { stopSpeech(); setMeetingEnded(true); closeReactor(); }}><CallIcon name="leave" /><span>Leave</span></button>
           </MeetingTools>
-          <div className="meeting-options">
-          <button type="button" className="secondary" disabled={!!busy || micActive} onClick={() => { closeReactor(); setStep("refine"); }}>← Edit persona</button>
-          <div className="answer-controls"><label htmlFor="answer-mode">Answer style</label><select id="answer-mode" value={answerMode} disabled={!!busy || micActive} onChange={e => setAnswerMode(e.target.value as AnswerMode)}><option value="flash">Quick answer</option><option value="pro">Deep analysis</option></select></div>
-          {!reactorSession && <label className="voice-toggle"><input type="checkbox" checked={voice} onChange={e => { setVoice(e.target.checked); if (!e.target.checked) stopSpeech(); }} />Read answers aloud</label>}
-          {!project.demo && !busy && (meetingEnded || reactorState === "error") && <button type="button" onClick={() => { closeReactor(); setMeetingEnded(false); void join(); }}>Rejoin meeting</button>}
-          </div>
-          <VoiceDirection key={project.id} direction={project.persona.voice.direction} wpm={project.persona.voice.wpm} disabled={!!busy || micActive || meetingEnded} demo={project.demo} onSave={direction => savePersona({ voice: { direction } })} onPreview={project.demo ? undefined : () => void previewVoice()} previewDisabled={!reactorSession || !callReady} />
+          {!project.demo && !busy && (meetingEnded || reactorState === "error") && <div className="meeting-options"><button type="button" onClick={() => { closeReactor(); setMeetingEnded(false); void join(); }}>Rejoin meeting</button></div>}
         </div>
         {audioSrc && <audio ref={audio} src={audioSrc} muted={muted} controls autoPlay onPlay={() => setSpeaking(true)} onTimeUpdate={event => setCaption(captionAt(captionCues(latestAnswer?.text || "", avatarWpm(project.persona)), event.currentTarget.currentTime))} onPause={() => { setSpeaking(false); setCaption(""); }} onEnded={() => { setSpeaking(false); setCaption(""); }} aria-label="Persona voice reading the answer" />}
 
-        <section id="meeting-transcript" className="card call-transcript" hidden={!showTranscript}>
-          <div className="card-label"><span className="label-title">Transcript</span><span>My personality adds flavor. My README supplies the facts.</span></div>
+        {panel === "chat" && <aside id="meeting-chat" className="meeting-panel meeting-chat" aria-label={`Chat with ${project.persona.name}`}>
+          <div className="meeting-panel-head"><div><h3>Chat</h3><p>Ask {project.persona.name} about its README. Answers cite the lines they use.</p></div><button type="button" className="meeting-panel-close" aria-label="Close chat" onClick={() => setPanel(null)}><CallIcon name="close" /></button></div>
           <div ref={transcript} className="messages" aria-live="polite">{messages.length === 0 && <p className="empty-chat">“How do I get started?” is a good place to start.</p>}{messages.map((m, i) => <div key={i} className={`message ${m.role}`}><strong>{m.role === "user" ? "You" : project.persona.name}</strong><p>{m.text}</p>{m.citations?.map((c, j) => <details key={j}><summary>README lines {c.startLine}–{c.endLine}</summary><pre>{project.repository.readme.split("\n").slice(c.startLine - 1, c.endLine).join("\n")}</pre><a href={`${project.repository.sourceUrl}#L${c.startLine}-L${c.endLine}`} target="_blank" rel="noreferrer">View source ↗</a></details>)}</div>)}{thinking && <div className="message thinking"><span className="spinner" /><p>Question received. Checking my README…</p></div>}</div>
-          <small>{reactorSession ? "Press Ask by voice, speak, then Finish question. Replies stream as Reactor voice and video." : project.demo ? "Demo speech uses your browser’s available voices. Video meetings and voice questions need live mode." : "Your microphone is available once the avatar connects."}</small>
-        </section>
+          <form className="meeting-composer" onSubmit={e => { e.preventDefault(); void ask(); }}><input aria-label="Question about the repository" value={question} onChange={e => setQuestion(e.target.value)} placeholder={reactorSession && !callReady ? "Connecting your avatar…" : `Message ${project.persona.name}`} maxLength={2000} disabled={questionDisabled} /><button aria-label="Send question" disabled={questionDisabled || !question.trim()}>{thinking ? <span className="spinner" /> : <CallIcon name="send" />}</button></form>
+          <small>{reactorSession ? "Or press Ask by voice, speak, then Finish question." : project.demo ? "Demo speech uses your browser’s voices. Video and voice questions need live mode." : "Your microphone is available once the avatar connects."}</small>
+        </aside>}
+
+        {panel === "settings" && <aside id="meeting-settings" className="meeting-panel meeting-settings" aria-label="Meeting settings">
+          <div className="meeting-panel-head"><div><h3>Settings</h3><p>Tune how {project.persona.name} answers and sounds.</p></div><button type="button" className="meeting-panel-close" aria-label="Close settings" onClick={() => setPanel(null)}><CallIcon name="close" /></button></div>
+          <div className="meeting-setting"><label htmlFor="answer-mode">Answer style</label><select id="answer-mode" value={answerMode} disabled={!!busy || micActive} onChange={e => setAnswerMode(e.target.value as AnswerMode)}><option value="flash">Quick answer</option><option value="pro">Deep analysis</option></select></div>
+          {!reactorSession && <label className="voice-toggle meeting-setting"><input type="checkbox" checked={voice} onChange={e => { setVoice(e.target.checked); if (!e.target.checked) stopSpeech(); }} />Read answers aloud</label>}
+          <VoiceDirection key={project.id} direction={project.persona.voice.direction} wpm={project.persona.voice.wpm} disabled={!!busy || micActive || meetingEnded} demo={project.demo} onSave={direction => savePersona({ voice: { direction } })} onPreview={project.demo ? undefined : () => void previewVoice()} previewDisabled={!reactorSession || !callReady} />
+          <button type="button" className="secondary meeting-edit" disabled={!!busy || micActive} onClick={() => { closeReactor(); setStep("refine"); }}>← Edit persona</button>
+        </aside>}
       </div>}
     </section>}
     {(busy || error) && <div className={`status ${error ? "error" : ""}`} role={error ? "alert" : "status"} aria-live="polite">{busy && <span className="spinner" />}<div>{busy || error}{busy && <small>{elapsed}s elapsed · Your request is being processed.</small>}</div></div>}

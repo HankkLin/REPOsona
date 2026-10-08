@@ -913,7 +913,7 @@ footer span { font-family: var(--font-mono); font-size: 11px; }
 /* Phase three: a meeting opens immediately, with voice in the main toolbar. */
 .meeting-room {
   display: grid; grid-template-columns: minmax(0, 1fr);
-  grid-template-areas: "heading" "stage" "controls" "ask" "audio" "side";
+  grid-template-areas: "heading" "stage" "controls" "audio" "side";
   gap: 16px; padding: 20px; border-radius: 24px;
   background: #202124; color: #f1f3f4;
 }
@@ -948,17 +948,6 @@ footer span { font-family: var(--font-mono); font-size: 11px; }
 .meeting-room .microphone-control { display: flex; flex-direction: column; align-items: center; gap: 6px; }
 .meeting-room .microphone-control > span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
 .meeting-options { display: flex; flex-wrap: wrap; justify-content: center; align-items: center; gap: 10px 18px; }
-.meeting-options .secondary { background: transparent; color: #dadce0; border-color: #5f6368; }
-.meeting-options label { color: #bdc1c6; font-size: 12px; }
-.meeting-options select { color: #e8eaed; background: #303134; border-color: #5f6368; }
-.meeting-room .call-ask { grid-area: ask; padding: 6px; border: 1px solid #5f6368; border-radius: 14px; background: #303134; }
-.meeting-room .call-ask input { background: transparent; color: #f1f3f4; }
-.meeting-room .call-ask input::placeholder { color: #9aa0a6; }
-.meeting-room .call-ask button { background: #a8c7fa; color: #102b50; }
-.meeting-room .call-transcript { grid-area: side; height: auto; min-height: 0; margin: 0; border: 0; background: #f8f9fa; color: #202124; }
-.meeting-room .call-transcript[hidden] { display: none; }
-.meeting-room .call-transcript .messages { max-height: 62vh; overflow: auto; }
-.meeting-room .call-transcript .card-label { flex-direction: column; align-items: flex-start; gap: 4px; }
 @media (hover: hover) and (pointer: fine) {
   .meeting-control:hover:not(:disabled) { background: #52565a; }
   .meeting-control.microphone-button:hover:not(:disabled), .meeting-control[aria-pressed=true]:hover:not(:disabled) { background: #c2d7fa; }
@@ -966,8 +955,6 @@ footer span { font-family: var(--font-mono); font-size: 11px; }
   .meeting-control.meeting-leave:hover:not(:disabled) { background: #c9362b; }
 }
 @media (min-width: 1024px) {
-  .meeting-room.with-transcript { grid-template-columns: minmax(0, 1fr) 320px; grid-template-areas: "heading heading" "stage side" "controls side" "ask side" "audio side"; }
-  .meeting-room.with-transcript .call-transcript { align-self: stretch; height: 0; min-height: 100%; }
 }
 @media (max-width: 750px) {
   .meeting-room { padding: 12px; border-radius: 18px; }
@@ -1013,4 +1000,63 @@ footer span { font-family: var(--font-mono); font-size: 11px; }
 @media (prefers-reduced-motion: reduce) {
   .meeting-goodbye { transition: none; }
   .goodbye-wave { animation: none; }
+}
+
+/* Right-hand meeting panels: one at a time, like a video call's side panel */
+@media (min-width: 1024px) {
+  .meeting-room.with-panel { grid-template-columns: minmax(0, 1fr) 360px; grid-template-areas: "heading heading" "stage side" "controls side" "audio side"; }
+  .meeting-room.with-panel .meeting-panel { align-self: stretch; height: 0; min-height: 100%; }
+}
+.meeting-panel {
+  grid-area: side;
+  display: flex; flex-direction: column; gap: 14px;
+  min-width: 0; padding: 18px;
+  border-radius: 16px; background: var(--surface); color: var(--ink);
+  transition: opacity 200ms ease, transform 260ms var(--ease-out);
+}
+@starting-style { .meeting-panel { opacity: 0; transform: translateX(8px); } }
+.meeting-panel-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.meeting-panel-head h3 { margin: 0; font-size: 18px; letter-spacing: -.02em; }
+.meeting-panel-head p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; color: var(--ink-3); }
+.meeting-panel-close { flex: none; display: grid; place-items: center; width: 36px; height: 36px; margin: -6px -6px 0 0; padding: 0; border-radius: 50%; background: transparent; color: var(--ink-2); }
+.meeting-panel-close svg { width: 20px; height: 20px; }
+@media (hover: hover) and (pointer: fine) { .meeting-panel-close:hover { background: var(--fill); } }
+
+/* Chat: a discussion thread with its own composer at the bottom */
+.meeting-chat .messages { flex: 1 1 auto; min-height: 220px; max-height: none; overflow: auto; margin: 0 -6px; padding: 4px 6px; }
+.meeting-chat .message { max-width: 90%; }
+.meeting-composer {
+  display: flex; align-items: center; gap: 8px;
+  margin: 0; padding: 5px 5px 5px 16px;
+  border: 1px solid var(--hairline); border-radius: 999px; background: var(--canvas);
+  transition: border-color 150ms ease;
+}
+.meeting-composer:focus-within { border-color: var(--ink-3); }
+.meeting-composer input { flex: 1; min-width: 0; padding: 9px 0; border: 0; background: transparent; outline: none; font-size: 15px; }
+.meeting-composer button { flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border-radius: 50%; }
+.meeting-composer button svg { width: 18px; height: 18px; }
+.meeting-composer .spinner { width: 16px; height: 16px; margin: 0; }
+.meeting-chat > small { font-size: 12px; line-height: 1.45; color: var(--ink-3); }
+
+/* Settings: answer style, read-aloud, and the voice direction editor */
+.meeting-settings { overflow: auto; }
+.meeting-setting { display: flex; flex-direction: column; gap: 6px; }
+.meeting-setting label { margin: 0; font-size: 14px; font-weight: 600; }
+.meeting-setting select { padding: 10px 12px; border: 1px solid var(--hairline); border-radius: var(--radius-control); background: var(--canvas); }
+label.voice-toggle.meeting-setting { flex-direction: row; align-items: center; font-weight: 500; }
+.meeting-room .meeting-panel .voice-direction { margin: 0; padding: 14px 0 0; border: 0; border-top: 1px solid var(--hairline); border-radius: 0; background: none; }
+.meeting-room .meeting-panel .voice-direction label { color: var(--ink); }
+.meeting-room .meeting-panel .voice-direction p, .meeting-room .meeting-panel .voice-direction small { color: var(--ink-3); }
+.meeting-room .meeting-panel .voice-direction textarea { background: var(--canvas); color: var(--ink); border-color: var(--hairline); }
+.meeting-room .meeting-panel .voice-direction button { background: var(--ink); color: var(--canvas); }
+.meeting-room .meeting-panel .voice-direction button[type=button] { background: var(--fill); color: var(--ink); }
+.meeting-panel .voice-direction form > div { flex-wrap: wrap; }
+.meeting-panel .voice-direction textarea { flex-basis: 100%; }
+.meeting-edit { align-self: flex-start; margin-top: auto; }
+
+@media (max-width: 1023px) {
+  .meeting-chat .messages { max-height: 50vh; }
+}
+@media (max-width: 750px) {
+  .meeting-composer input { font-size: 16px; }
 }

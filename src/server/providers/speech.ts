@@ -11,12 +11,13 @@ export async function synthesizeSpeech(project: Project, text: string) {
   if (project.demo) return { mode: "demo" as const };
   if (!process.env.GEMINI_API_KEY) throw new Error("Configure GEMINI_API_KEY for persona speech.");
   const voice = project.persona.voice;
+  const legacyDelivery = voice.casting || voice.direction?.trim() ? "" : project.persona.speakingStyle;
   const name = voiceName(project);
   const response = await fetch("https://generativelanguage.googleapis.com/v1beta/interactions", {
     method: "POST", headers: { "Content-Type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY },
     body: JSON.stringify({
       model: googleModels().tts,
-      input: [{ type: "user_input", content: [{ type: "text", text, annotations: [{ type: "speech_metadata", style: `${voice.tone}. ${project.persona.speakingStyle}. Language ${voice.language}. Pace ${voice.rate < 1 ? "slightly relaxed" : voice.rate > 1 ? "slightly brisk" : "natural"}, pitch ${voice.pitch < 1 ? "slightly low" : voice.pitch > 1 ? "slightly high" : "natural"}.` }] }] }],
+      input: [{ type: "user_input", content: [{ type: "text", text, annotations: [{ type: "speech_metadata", style: `${voice.casting || voice.direction || voice.tone}. ${legacyDelivery} Language ${voice.language}. Pace ${voice.wpm ? `${voice.wpm} words per minute` : voice.rate < 1 ? "slightly relaxed" : voice.rate > 1 ? "slightly brisk" : "natural"}${voice.casting || voice.direction?.trim() ? "" : `, pitch ${voice.pitch < 1 ? "slightly low" : voice.pitch > 1 ? "slightly high" : "natural"}`}.` }] }] }],
       response_format: { type: "audio" }, generation_config: { speech_config: [{ voice: name }] },
     }), signal: AbortSignal.timeout(120000),
   });

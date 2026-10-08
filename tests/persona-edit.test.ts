@@ -21,4 +21,12 @@ describe("persona editing", () => {
     expect(personaPatchSchema.safeParse({ visualPrompt: "x" }).success).toBe(false);
     expect(personaPatchSchema.safeParse({ voice: { rate: 2 } }).success).toBe(false);
   });
+  it("saves and clears natural-language voice direction without changing other voice settings", async () => {
+    const persona = await createPersona(repository, true);
+    const edited = editPersona(persona, personaPatchSchema.parse({ voice: { direction: "  Warm and relaxed, with a soft British accent.  " } }));
+    expect(edited.voice.direction).toBe("Warm and relaxed, with a soft British accent.");
+    expect(edited.voice.rate).toBe(persona.voice.rate);
+    expect(editPersona(edited, { voice: { direction: "" } }).voice.direction).toBe("");
+    expect(personaPatchSchema.safeParse({ voice: { direction: "x".repeat(401) } }).success).toBe(false);
+  });
 });

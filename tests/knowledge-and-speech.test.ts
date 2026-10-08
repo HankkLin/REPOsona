@@ -80,11 +80,12 @@ describe("Gemini persona speech", () => {
   it("keeps the answer verbatim and voice instructions in structured metadata", async () => {
     vi.stubEnv("GEMINI_API_KEY", "test-key"); vi.stubEnv("GEMINI_TTS_MODEL", "configured-tts");
     const mock = vi.fn().mockResolvedValue(Response.json({ steps: [{ type: "model_output", content: [{ type: "audio", data: wave() }] }] })); vi.stubGlobal("fetch", mock);
-    const p = await fixture(); const result = await synthesizeSpeech(p, "Install dependencies.");
+    const p = await fixture(); p.persona.voice.direction = "Soft, curious, with a British accent.";
+    const result = await synthesizeSpeech(p, "Install dependencies.");
     expect(result.mode).toBe("live"); expect(result).toHaveProperty("audio", `data:audio/wav;base64,${wave()}`);
     const body = JSON.parse(mock.mock.calls[0][1].body);
     expect(body.model).toBe("configured-tts"); expect(body.input[0].content[0].text).toBe("Install dependencies.");
-    expect(body.input[0].content[0].annotations[0].style).toContain(p.persona.voice.tone);
+    expect(body.input[0].content[0].annotations[0].style).toContain(p.persona.voice.direction);
     expect(body.generation_config.speech_config[0].voice).toBe("Aoede");
   });
   it("selects a stable stock voice for old personas and does not silently fall back on failures", async () => {

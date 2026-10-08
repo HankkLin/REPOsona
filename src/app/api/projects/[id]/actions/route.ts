@@ -8,6 +8,7 @@ import { createReactorSession } from "@/server/providers/reactor";
 import { answerQuestion } from "@/server/chat";
 import { createKnowledgeBase, readmeHash } from "@/server/knowledge";
 import { synthesizeSpeech } from "@/server/providers/speech";
+import { resolveVoiceDirection } from "@/server/voice-direction";
 
 export const runtime = "nodejs";
 const actionSchema = z.discriminatedUnion("action", [
@@ -35,6 +36,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     if (input.action === "session") return NextResponse.json(await createReactorSession(project), { headers: { "Cache-Control": "no-store" } });
     if (input.action === "persona") {
       project.persona = editPersona(project.persona, input.persona);
+      if (input.persona.voice?.direction !== undefined) project.persona = await resolveVoiceDirection(project.persona, input.persona.voice.direction, project.demo);
     } else if (input.action === "generate") {
       if (project.avatars.length >= 20) throw new Error("This starter supports 20 avatar versions per project.");
       project.avatars.push(await createAvatar(project, input.suggestion));

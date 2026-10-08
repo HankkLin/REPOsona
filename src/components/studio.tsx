@@ -5,6 +5,10 @@ import type { Answer, AnswerMode } from "@/domain/schemas";
 import { importStages, readImportProgress, type ImportStage, type ViewProject } from "@/domain/import-progress";
 import { ReactorAvatar, type ReactorHandle, type ReactorState } from "./reactor-avatar";
 import { MicrophoneQuestion } from "./microphone-question";
+import { MeetingTools, CallIcon } from "./meeting-tools";
+import { VoiceDirection } from "./voice-direction";
+import { captionAt, captionCues } from "./meeting-captions";
+import { avatarWpm } from "./meeting-voice";
 import { IntroChat } from "./intro-chat";
 import { PersonaCard, type PersonaPatch } from "./persona-card";
 import { personaMarkdown } from "@/server/persona-markdown";
@@ -40,13 +44,28 @@ export function Studio({ demo }: { demo: boolean }) {
   const [reactorSession, setReactorSession] = useState<{ jwt: string; expiresAt: number }>();
   const [reactorState, setReactorState] = useState<ReactorState>("connecting");
   const [micActive, setMicActive] = useState(false);
+  const [captions, setCaptions] = useState(true);
+  const [caption, setCaption] = useState("");
+  const [muted, setMuted] = useState(false);
+  const [showTranscript, setShowTranscript] = useState(false);
+  const [meetingEnded, setMeetingEnded] = useState(false);
+  const call = useRef<HTMLDivElement>(null);
   const reactor = useRef<ReactorHandle>(null);
   const pending = useRef(false);
   const transcript = useRef<HTMLDivElement>(null);
-  const closeReactor = useCallback(() => { setReactorSession(undefined); setReactorState("connecting"); }, []);
+  const closeReactor = useCallback(() => { setReactorSession(undefined); setReactorState("connecting"); setCaption(""); }, []);
+  const endMeeting = useCallback(() => { setMeetingEnded(true); closeReactor(); }, [closeReactor]);
   const stopSpeech = useCallback(() => {
-    audio.current?.pause(); window.speechSynthesis?.cancel(); setSpeaking(false); setAudioSrc("");
+    audio.current?.pause(); window.speechSynthesis?.cancel(); setSpeaking(false); setAudioSrc(""); setCaption("");
   }, []);
+  useEffect(() => {
+    if (step === "talk" && project?.approvedAvatarId && !project.demo) {
+      setMeetingEnded(false);
+      void join();
+    }
+    // Entering Talk owns session startup; other project updates must not reconnect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, project?.id, project?.approvedAvatarId, project?.demo]);
   useEffect(() => {
     const id = localStorage.getItem("human-readme-project");
     if (id) { setBusy("Restoring your studio…"); api<ViewProject>(`/api/projects/${id}`).then(p => { setProject(p); setStep(startStep(p)); }).catch(e => {
@@ -68,7 +87,7 @@ export function Studio({ demo }: { demo: boolean }) {
   const avatar = project?.avatars.find(a => a.id === (selected || project.approvedAvatarId)) || project?.avatars.at(-1);
   const approved = project?.avatars.find(a => a.id === project.approvedAvatarId);
   const callReady = reactorState === "ready" || reactorState === "speaking";
-  const questionDisabled = !!busy || micActive || (!!reactorSession && !callReady);
+  const questionDisabled = !!busy || micActive || meetingEnded || (!!reactorSession && !callReady);
   const thinking = busy.startsWith("Question");
   const talking = speaking || (!!reactorSession && reactorState === "speaking");
   async function run(label: string, task: () => Promise<void>) {
@@ -96,6 +115,13 @@ export function Studio({ demo }: { demo: boolean }) {
     await run("Saving your edit…", async () => { setProject(await api<ViewProject>(`/api/projects/${project!.id}/actions`, { action: "persona", persona })); saved = true; });
     return saved;
   }
+  async function previewVoice() {
+    await run("Previewing the saved voice…", async () => {
+      stopSpeech(); await reactor.current?.stop();
+      if (!reactor.current) throw new Error("Wait for the avatar to connect before previewing its voice.");
+      await reactor.current.speak("Hello there. Take a breath, and let’s explore this repository together. Small ideas can turn into something wonderful.");
+    });
+  }
   async function makeFace(twist: string) {
     await run(project!.avatars.length ? "Refining the face…" : "Giving it a face…", async () => {
       const result = await action({ action: "generate", suggestion: twist });
@@ -113,9 +139,11 @@ export function Studio({ demo }: { demo: boolean }) {
   }
   async function join() {
     await run("Joining the meeting. Preparing your avatar…", async () => {
-      const session = await api<{ mode: string; jwt?: string; expiresAt?: number }>(`/api/projects/${project!.id}/actions`, { action: "session" });
-      if (!session.jwt || !session.expiresAt) throw new Error("Video meetings require live mode. Demo questions are available in text.");
-      stopSpeech(); setReactorState("connecting"); setReactorSession({ jwt: session.jwt, expiresAt: session.expiresAt });
+      try {
+        const session = await api<{ mode: string; jwt?: string; expiresAt?: number }>(`/api/projects/${project!.id}/actions`, { action: "session" });
+        if (!session.jwt || !session.expiresAt) throw new Error("Video meetings require live mode. Demo questions are available in text.");
+        stopSpeech(); setReactorState("connecting"); setReactorSession({ jwt: session.jwt, expiresAt: session.expiresAt });
+      } catch (error) { setReactorState("error"); throw error; }
     });
   }
   async function ask(input = question) {
@@ -134,7 +162,10 @@ export function Studio({ demo }: { demo: boolean }) {
         window.speechSynthesis.cancel();
         const utterance = new SpeechSynthesisUtterance(result.answer);
         utterance.lang = project!.persona.voice.language; utterance.rate = project!.persona.voice.rate; utterance.pitch = project!.persona.voice.pitch;
-        utterance.onstart = () => setSpeaking(true); utterance.onend = utterance.onerror = () => setSpeaking(false);
+        const cues = captionCues(result.answer, avatarWpm(project!.persona));
+        utterance.onstart = () => { setSpeaking(true); setCaption(captionAt(cues, 0)); };
+        utterance.onboundary = event => setCaption(captionAt(cues, event.elapsedTime));
+        utterance.onend = utterance.onerror = () => { setSpeaking(false); setCaption(""); };
         window.speechSynthesis.speak(utterance);
       }
     });
@@ -157,7 +188,7 @@ export function Studio({ demo }: { demo: boolean }) {
         <ol>{STEPS.map((s, i) => {
           const reachable = s.id === "meet" || (s.id === "refine" && project.avatars.length > 0) || (s.id === "talk" && !!project.approvedAvatarId);
           const index = STEPS.findIndex(x => x.id === step);
-          return <li key={s.id}><button type="button" className={`${s.id === step ? "current" : ""} ${i < index ? "done" : ""}`} aria-current={s.id === step ? "step" : undefined} disabled={!reachable || !!busy || micActive} onClick={() => setStep(s.id)}><span>{i + 1}</span>{s.label}</button></li>;
+          return <li key={s.id}><button type="button" className={`${s.id === step ? "current" : ""} ${i < index ? "done" : ""}`} aria-current={s.id === step ? "step" : undefined} disabled={!reachable || !!busy || micActive} onClick={() => { if (s.id !== step) { stopSpeech(); closeReactor(); setStep(s.id); } }}><span>{i + 1}</span>{s.label}</button></li>;
         })}</ol>
       </nav>
 
@@ -193,37 +224,49 @@ export function Studio({ demo }: { demo: boolean }) {
         </aside>
         <div className="split-main">
           <PersonaCard persona={project.persona} repository={project.repository} photo={avatar?.image || "/api/reference"} disabled={!!busy} onDownload={downloadPersona} onSave={savePersona} />
+          <VoiceDirection key={project.id} direction={project.persona.voice.direction} wpm={project.persona.voice.wpm} disabled={!!busy} demo={project.demo} onSave={direction => savePersona({ voice: { direction } })} />
         </div>
       </div>}
 
-      {step === "talk" && project.approvedAvatarId && <div className="call">
-        <div className={`call-stage ${talking ? "speaking" : ""} ${reactorSession ? "live" : ""}`}>
+      {step === "talk" && project.approvedAvatarId && <div ref={call} className={`call meeting-room ${showTranscript ? "with-transcript" : ""}`}>
+        <div className="meeting-heading"><div><span className="eyebrow">REPOSITORY MEETING</span><h2>In conversation with {project.persona.name}</h2></div><span className="meeting-badge">{project.demo ? "Demo preview" : meetingEnded ? "Meeting ended" : reactorState === "error" ? "Connection failed" : reactorSession && callReady ? "Live · Reactor" : "Connecting to Reactor…"}</span></div>
+        <div className={`call-stage ${talking ? "speaking" : ""} ${reactorSession ? "live" : ""} ${meetingEnded ? "ended" : ""}`}>
           {reactorSession
-            ? <ReactorAvatar ref={reactor} {...reactorSession} image={approved!.image} persona={project.persona} onClose={closeReactor} onState={setReactorState} />
+            ? <ReactorAvatar ref={reactor} {...reactorSession} muted={muted} image={approved!.image} persona={project.persona} onClose={endMeeting} onState={setReactorState} onCaption={setCaption} />
             : <img src={approved!.image} alt={`${project.persona.name} avatar`} />}
           <div className="call-tag"><strong>{project.persona.name}</strong><span>{project.persona.archetype || "Repository persona"}</span></div>
-          <span className="call-state">{thinking ? "Thinking…" : talking ? "Speaking" : "Listening"}</span>
-          {latestAnswer && <p className="call-subtitle" key={messages.length}>{latestAnswer.text}</p>}
+          <span className="call-state">{micActive ? "Microphone active" : thinking ? "Thinking…" : talking ? "Speaking" : project.demo ? "Demo preview" : reactorState === "error" ? "Connection failed" : !reactorSession ? meetingEnded ? "Meeting ended" : "Connecting…" : "Ready for your question"}</span>
+          {captions && caption && !meetingEnded && <p className="call-subtitle" key={caption}>{caption}</p>}
+          {meetingEnded && <div className="meeting-goodbye" role="status"><span className="goodbye-wave" aria-hidden="true">👋</span><h2>Bye, c u next time</h2><p>Your repository will be right here.</p></div>}
+          {!reactorSession && !project.demo && !meetingEnded && <div className="meeting-lobby" role="status">{busy.startsWith("Joining") ? <><span className="spinner" />Starting your live avatar…</> : "Your live avatar will appear here once connected."}</div>}
         </div>
 
         <form className="chat-input call-ask" onSubmit={e => { e.preventDefault(); void ask(); }}><input aria-label="Question about the repository" value={question} onChange={e => setQuestion(e.target.value)} placeholder={reactorSession && !callReady ? "Connecting your avatar…" : `Ask ${project.persona.name} anything about its README…`} maxLength={2000} disabled={questionDisabled} /><button disabled={questionDisabled || !question.trim()}>{thinking ? "Answering…" : "Ask ↗"}</button></form>
 
         <div className="call-controls">
+          <MeetingTools key={`${project.id}-${reactorSession ? "live" : meetingEnded ? "ended" : "lobby"}`} disabled={meetingEnded} onError={setError}>
+            <MicrophoneQuestion projectId={project.id} disabled={project.demo || meetingEnded || questionDisabled || !reactorSession || !callReady} onActivity={setMicActive} onStart={async () => { setError(""); stopSpeech(); await reactor.current?.stop(); }} onQuestion={text => void ask(text)} onError={setError} />
+            <button type="button" className="meeting-control" aria-pressed={muted} onClick={() => setMuted(value => !value)}><CallIcon name="speaker" /><span>{muted ? "Sound off" : "Sound on"}</span></button>
+            <button type="button" className="meeting-control" aria-pressed={captions} onClick={() => setCaptions(value => !value)}><CallIcon name="captions" /><span>Captions</span></button>
+            <button type="button" className="meeting-control" aria-pressed={showTranscript} aria-controls="meeting-transcript" onClick={() => setShowTranscript(value => !value)}><CallIcon name="chat" /><span>Transcript</span></button>
+            <button type="button" className="meeting-control" onClick={() => { void (document.fullscreenElement ? document.exitFullscreen() : call.current?.requestFullscreen())?.catch(() => setError("Fullscreen is unavailable in this browser.")); }}><CallIcon name="fullscreen" /><span>Fullscreen</span></button>
+            <button type="button" className="meeting-control" disabled={!!busy || micActive || !talking} onClick={() => void run("Stopping the avatar’s response…", async () => { stopSpeech(); await reactor.current?.stop(); })}><CallIcon name="stop" /><span>Stop answer</span></button>
+            <button type="button" className="meeting-control meeting-leave" disabled={!!busy || micActive || meetingEnded} onClick={() => { stopSpeech(); setMeetingEnded(true); closeReactor(); }}><CallIcon name="leave" /><span>Leave</span></button>
+          </MeetingTools>
+          <div className="meeting-options">
           <button type="button" className="secondary" disabled={!!busy || micActive} onClick={() => { closeReactor(); setStep("refine"); }}>← Edit persona</button>
           <div className="answer-controls"><label htmlFor="answer-mode">Answer style</label><select id="answer-mode" value={answerMode} disabled={!!busy || micActive} onChange={e => setAnswerMode(e.target.value as AnswerMode)}><option value="flash">Quick answer</option><option value="pro">Deep analysis</option></select></div>
-          <label className="voice-toggle"><input type="checkbox" checked={voice} disabled={!!reactorSession} onChange={e => { setVoice(e.target.checked); if (!e.target.checked) stopSpeech(); }} />Read answers aloud</label>
-          {!project.demo && reactorSession && <MicrophoneQuestion projectId={project.id} disabled={questionDisabled || !callReady} onActivity={setMicActive} onStart={async () => { setError(""); stopSpeech(); await reactor.current?.stop(); }} onQuestion={text => void ask(text)} onError={setError} />}
-          {reactorSession ? reactorState === "error"
-            ? <button type="button" disabled={!!busy} onClick={() => { closeReactor(); void join(); }}>Rejoin meeting</button>
-            : <button type="button" className="secondary" disabled={!callReady || !!busy || micActive} onClick={() => void run("Stopping the avatar’s response…", async () => { await reactor.current?.stop(); })}>Stop answer</button>
-            : <button type="button" className="secondary" disabled={!!busy || project.demo} title={project.demo ? "Video meetings are available in live mode." : undefined} onClick={() => void join()}>{busy.startsWith("Joining") ? <><span className="spinner" />Joining…</> : "Join video meeting ↗"}</button>}
+          {!reactorSession && <label className="voice-toggle"><input type="checkbox" checked={voice} onChange={e => { setVoice(e.target.checked); if (!e.target.checked) stopSpeech(); }} />Read answers aloud</label>}
+          {!project.demo && !busy && (meetingEnded || reactorState === "error") && <button type="button" onClick={() => { closeReactor(); setMeetingEnded(false); void join(); }}>Rejoin meeting</button>}
+          </div>
+          <VoiceDirection key={project.id} direction={project.persona.voice.direction} wpm={project.persona.voice.wpm} disabled={!!busy || micActive || meetingEnded} demo={project.demo} onSave={direction => savePersona({ voice: { direction } })} onPreview={project.demo ? undefined : () => void previewVoice()} previewDisabled={!reactorSession || !callReady} />
         </div>
-        {audioSrc && <audio ref={audio} src={audioSrc} controls autoPlay onPlay={() => setSpeaking(true)} onPause={() => setSpeaking(false)} onEnded={() => setSpeaking(false)} aria-label="Persona voice reading the answer" />}
+        {audioSrc && <audio ref={audio} src={audioSrc} muted={muted} controls autoPlay onPlay={() => setSpeaking(true)} onTimeUpdate={event => setCaption(captionAt(captionCues(latestAnswer?.text || "", avatarWpm(project.persona)), event.currentTarget.currentTime))} onPause={() => { setSpeaking(false); setCaption(""); }} onEnded={() => { setSpeaking(false); setCaption(""); }} aria-label="Persona voice reading the answer" />}
 
-        <section className="card call-transcript">
+        <section id="meeting-transcript" className="card call-transcript" hidden={!showTranscript}>
           <div className="card-label"><span className="label-title">Transcript</span><span>My personality adds flavor. My README supplies the facts.</span></div>
           <div ref={transcript} className="messages" aria-live="polite">{messages.length === 0 && <p className="empty-chat">“How do I get started?” is a good place to start.</p>}{messages.map((m, i) => <div key={i} className={`message ${m.role}`}><strong>{m.role === "user" ? "You" : project.persona.name}</strong><p>{m.text}</p>{m.citations?.map((c, j) => <details key={j}><summary>README lines {c.startLine}–{c.endLine}</summary><pre>{project.repository.readme.split("\n").slice(c.startLine - 1, c.endLine).join("\n")}</pre><a href={`${project.repository.sourceUrl}#L${c.startLine}-L${c.endLine}`} target="_blank" rel="noreferrer">View source ↗</a></details>)}</div>)}{thinking && <div className="message thinking"><span className="spinner" /><p>Question received. Checking my README…</p></div>}</div>
-          <small>{reactorSession ? "Camera off · Your microphone stays off until you press “Ask by voice”." : project.demo ? "Demo speech uses your browser’s available voices. Video meetings and voice questions need live mode." : "Join the video meeting to use your microphone and hear the avatar."}</small>
+          <small>{reactorSession ? "Press Ask by voice, speak, then Finish question. Replies stream as Reactor voice and video." : project.demo ? "Demo speech uses your browser’s available voices. Video meetings and voice questions need live mode." : "Your microphone is available once the avatar connects."}</small>
         </section>
       </div>}
     </section>}

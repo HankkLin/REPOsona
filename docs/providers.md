@@ -40,6 +40,8 @@ Both models document portrait inputs. Evaluate generated character motion in liv
 
 Sources: [LTX overview](https://docs.reactor.inc/model-api-reference/ltx/overview), [typed methods](https://www.reactor.inc/models/ltx/api), [Vidu S2-Avatar](https://docs.reactor.inc/model-api-reference/vidu-s2-avatar/overview).
 
+The [LTX prompt guide](https://docs.reactor.inc/model-api-reference/ltx/prompt-guide) confirms that scene prompts cast the voice through register, grain, accent, breath, cadence, and dynamics. Generic adjective labels can converge on the same voice. The app now compiles user descriptions to casting prose and explicit WPM using Gemini Flash, then checks Reactor's echoed settings. It sends `setPrompt` only for changed casting; resending on each answer resets the voice. Preview uses a fixed script for comparison. The image model's textual acoustic profile is not consumed; its requirements feed the structured persona generator instead.
+
 ## Authentication and lifecycle
 
 The project action route calls `POST https://api.reactor.inc/tokens` using `Reactor-API-Key`. It requests a 15-minute token scoped to `reactor/ltx2`, one session, and a 10-minute maximum session duration. API keys never reach the browser. The response is sent with no-store cache headers.

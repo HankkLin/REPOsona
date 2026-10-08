@@ -14,7 +14,7 @@ export const personaSchema = z.object({
   goals: z.array(z.string().max(200)).max(4).optional(),
   frustrations: z.array(z.string().max(200)).max(4).optional(),
   dna: z.object({ stability: z.number().min(0).max(100), strictness: z.number().min(0).max(100), playfulness: z.number().min(0).max(100) }).optional(),
-  voice: z.object({ language: z.string().max(30), tone: z.string().max(200), rate: z.number().min(0.5).max(1.5), pitch: z.number().min(0.5).max(1.5), name: z.enum(["Kore", "Puck", "Charon", "Aoede", "Fenrir", "Leda", "Orus", "Zephyr"]).optional() }),
+  voice: z.object({ language: z.string().max(30), tone: z.string().max(200), direction: z.string().trim().max(400).optional(), casting: z.string().trim().min(1).max(450).optional(), wpm: z.number().int().min(80).max(220).optional(), rate: z.number().min(0.5).max(1.5), pitch: z.number().min(0.5).max(1.5), name: z.enum(["Kore", "Puck", "Charon", "Aoede", "Fenrir", "Leda", "Orus", "Zephyr"]).optional() }),
 });
 export type Persona = z.infer<typeof personaSchema>;
 export type Repository = { owner: string; name: string; url: string; readme: string; sourceUrl: string; truncated: boolean };

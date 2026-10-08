@@ -8,7 +8,9 @@ The Next.js App Router hosts the UI and server routes in one TypeScript applicat
 2. Gemini Flash infers a structured creative persona and stock voice. Save the README snapshot, persona, and per-project Google embedding index together. Export the persona as markdown.
 3. Generate the initial character portrait automatically from the persona and repository identity without a fixed mascot reference. Stream real progress stages to the browser. Additional suggestions use the latest character image and prior suggestions. Retain versions.
 4. Approve a version. Retrieve excerpts from this project's index; Gemini Flash or explicitly selected Gemini Pro answers with original README line citations. Optional Gemini TTS reads the answer using the stable stock voice and persona delivery metadata. Browser speech is restricted to the explicit demo.
-5. Join the Reactor video meeting: mint a scoped token. The LTX client uploads the approved image and sets persona-directed delivery. Each cited Gemini answer becomes the exact speech script; audio/video tracks share one MediaStream.
+5. Entering Talk automatically mints a scoped Reactor token. The LTX client uploads the approved image, sets persona-directed delivery and a stable voice seed, and starts a welcome take. Each cited Gemini answer becomes the exact speech script; audio/video tracks share one MediaStream. Voice questions interrupt playback before requesting microphone permission, record an explicit turn, and use the existing Gemini transcription route. The transcript and answer captions can be toggled independently. Leaving or changing steps disconnects the avatar and releases local media.
+
+Camera and screen controls are opt-in local previews only: video is never uploaded or sent to the avatar. The avatar has no screen understanding or other meeting participants. Preview tracks stop on leaving, changing steps, unmount, or browser Stop sharing. Sound mute applies to the Reactor video and Gemini read-aloud audio.
 
 ## Grounding and trust
 

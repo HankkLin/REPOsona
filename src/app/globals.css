@@ -1059,6 +1059,8 @@ label.voice-toggle.meeting-setting { flex-direction: row; align-items: center; f
 }
 @media (max-width: 750px) {
   .meeting-composer input { font-size: 16px; }
+}
+
 /* Presentation deck (/present): one idea per slide, lots of canvas */
 .deck { display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; padding: max(24px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom)); }
 .deck-slide { flex: 1; display: grid; place-items: center; width: 100%; max-width: 1080px; margin: 0 auto; transition: opacity 260ms ease, transform 320ms var(--ease-out); }

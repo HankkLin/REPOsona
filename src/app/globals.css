@@ -114,7 +114,7 @@ a {
 .mode.demo::before { background: var(--sun); }
 
 /* Hero */
-.hero { max-width: 880px; margin: 96px auto 112px; padding: 0 20px; text-align: center; }
+.hero { max-width: 880px; margin: 40px auto 112px; padding: 0 20px; text-align: center; }
 .eyebrow {
   display: inline-flex;
   align-items: center;
@@ -506,4 +506,153 @@ footer span { font-family: var(--font-mono); font-size: 11px; }
     .avatar-stage img, .message { transform: none; filter: none; }
     .status { transform: translateX(-50%); }
   }
+}
+
+/* Intro: hand-drawn avatar builds itself, then talks in a bubble above its head */
+.intro {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 420px;
+  margin: 0 auto 32px;
+}
+.intro-avatar { width: 150px; height: auto; overflow: visible; }
+.intro-avatar .draw {
+  fill: var(--surface);
+  stroke: var(--ink);
+  stroke-width: 2.4;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  fill-opacity: 0;
+  animation: draw-line 700ms var(--ease-out) var(--d) forwards, fill-in 260ms ease calc(var(--d) + 450ms) forwards;
+}
+.intro-avatar .hood { fill: var(--canvas); }
+.intro-avatar .pop {
+  opacity: 0;
+  transform: scale(.6);
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop-in 420ms var(--ease-spring) var(--d) forwards;
+}
+.intro-avatar .ink { fill: var(--ink); }
+.intro-avatar .sun { fill: var(--sun); stroke: var(--ink); stroke-width: 2.2; }
+.intro-avatar .blush { fill: var(--tomato); fill-opacity: .45; }
+.intro-avatar .line { fill: none; stroke: var(--ink); stroke-width: 2.2; }
+.intro-avatar .book rect { fill: var(--sky); stroke: var(--ink); stroke-width: 2.2; }
+.intro-avatar .book .line { stroke: var(--surface); }
+.intro-avatar .paw { fill: var(--surface); stroke: var(--ink); stroke-width: 2.2; }
+.intro-avatar .spark { stroke: var(--ink); stroke-width: 1.6; }
+.intro-avatar .tomato { fill: var(--tomato); }
+.intro-avatar .sky { fill: var(--sky); }
+.intro-avatar .mouth-open { fill: var(--ink); opacity: 0; }
+.intro-avatar.talking .mouth-open { animation: talk-mouth 240ms ease-in-out infinite alternate; }
+.intro-avatar.talking .mouth-closed { visibility: hidden; }
+.intro-avatar .eyes { transform-box: fill-box; transform-origin: center; animation: blink 4.2s 2.4s infinite; }
+.intro-avatar .bob { animation: bob 3.2s ease-in-out 2s infinite; }
+.intro-avatar.talking .bob { animation-duration: .9s; }
+@keyframes draw-line { to { stroke-dashoffset: 0; } }
+@keyframes fill-in { to { fill-opacity: 1; } }
+@keyframes pop-in { to { opacity: 1; transform: scale(1); } }
+@keyframes talk-mouth { from { opacity: 0; } to { opacity: 1; } }
+@keyframes blink { 0%, 94%, 100% { transform: scaleY(1); } 97% { transform: scaleY(.1); } }
+@keyframes bob { 50% { transform: translateY(-3px); } }
+
+.intro-speech { display: flex; align-items: flex-end; justify-content: center; width: 100%; min-height: 84px; margin-bottom: 2px; }
+.intro-bubble {
+  position: relative;
+  margin: 0;
+  max-width: 100%;
+  padding: 10px 16px;
+  border: 1.5px solid var(--ink);
+  border-radius: 18px;
+  background: var(--surface);
+  font-size: 15px;
+  line-height: 1.45;
+  text-align: center;
+  transform-origin: bottom center;
+  transition: opacity 220ms ease, transform 280ms var(--ease-spring);
+}
+.intro-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -7px;
+  width: 12px;
+  height: 12px;
+  border-right: 1.5px solid var(--ink);
+  border-bottom: 1.5px solid var(--ink);
+  background: var(--surface);
+  transform: translateX(-50%) rotate(45deg);
+}
+@starting-style { .intro-bubble { opacity: 0; transform: translateY(6px) scale(.96); } }
+.intro-bubble.leaving { opacity: 0; transform: translateY(-4px); transition-duration: 150ms; transition-timing-function: ease; }
+.intro-bubble span { opacity: 0; transition: opacity 140ms ease; }
+.intro-bubble span.on { opacity: 1; }
+.intro-dots { display: inline-flex; gap: 4px; padding: 6px 2px; }
+.intro-dots i { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-3); animation: dot 900ms ease-in-out infinite; }
+.intro-dots i:nth-child(2) { animation-delay: 150ms; }
+.intro-dots i:nth-child(3) { animation-delay: 300ms; }
+@keyframes dot { 0%, 60%, 100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+
+/* Hero copy follows the avatar in */
+.hero > :not(.intro) { animation: rise 500ms var(--ease-out) both; }
+.hero > .eyebrow { animation-delay: 1.4s; }
+.hero > h1 { animation-delay: 1.48s; }
+.hero > p { animation-delay: 1.56s; }
+.hero > form, .hero > .example { animation-delay: 1.64s; }
+.hero > .journey, .hero > .demo-note { animation-delay: 1.72s; }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+
+@media (max-width: 480px) {
+  .intro-avatar { width: 124px; }
+  .intro-bubble { font-size: 14px; }
+}
+
+.intro.still .draw { stroke-dashoffset: 0; fill-opacity: 1; animation: none; }
+.intro.still .pop { opacity: 1; transform: none; animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .intro-avatar .eyes, .intro-avatar .bob, .intro-dots i, .hero > :not(.intro) { animation: none; }
+  @starting-style { .intro-bubble { transform: none; } }
+}
+
+/* Persona, laid out like a user-research persona sheet */
+.persona-head { display: flex; align-items: center; gap: 14px; margin-top: 20px; }
+.persona-photo { flex: none; width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--canvas); border: 1px solid var(--hairline); }
+.persona-head h2 { margin: 0; }
+.persona-role { margin: 2px 0 0; font-family: var(--font-mono); font-size: 12px !important; color: var(--ink-3) !important; }
+.persona-quote {
+  margin: 18px 0 0;
+  padding: 2px 0 2px 14px;
+  border-left: 3px solid var(--sun);
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 500;
+  line-height: 1.35;
+  letter-spacing: -.01em;
+}
+.persona { container-type: inline-size; }
+.persona-facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; margin: 20px 0 4px; border: 1px solid var(--hairline); border-radius: 12px; overflow: hidden; background: var(--hairline); }
+.persona-facts div { min-width: 0; padding: 10px 12px; background: var(--surface); }
+.persona-facts div:first-child { grid-column: 1 / -1; }
+.persona-facts dt { font-family: var(--font-mono); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); }
+.persona-facts dd { margin: 2px 0 0; font-size: 14px; font-weight: 500; overflow-wrap: anywhere; }
+.spectrum { display: flex; flex-direction: column; gap: 10px; margin: 6px 0 4px; }
+.spectrum-row { display: grid; grid-template-columns: 1fr 1fr; grid-template-areas: "track track" "left right"; row-gap: 8px; font-size: 12px; color: var(--ink-3); }
+.spectrum-row span:first-child { grid-area: left; }
+.spectrum-row span:last-child { grid-area: right; text-align: right; }
+.spectrum-track { grid-area: track; }
+.spectrum-track { position: relative; height: 4px; border-radius: 999px; background: var(--fill); }
+.spectrum-track i { position: absolute; top: 50%; width: 14px; height: 14px; border: 2px solid var(--ink); border-radius: 50%; background: var(--tomato); transform: translate(-50%, -50%); }
+.spectrum-row:nth-child(2) i { background: var(--sun); }
+.spectrum-row:nth-child(3) i { background: var(--sky); }
+.persona-split { display: grid; grid-template-columns: 1fr; }
+.persona-split ul { list-style: none; padding: 0; }
+.persona-split li { position: relative; padding-left: 16px; font-size: 14px !important; }
+.persona-split li::before { content: ""; position: absolute; left: 0; top: .62em; width: 7px; height: 7px; border-radius: 50%; background: var(--mint); }
+.frustrations li::before { background: var(--tomato); }
+@container (min-width: 460px) {
+  .persona-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .persona-facts div:first-child { grid-column: auto; }
+  .persona-split { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+  .spectrum-row { grid-template-columns: 84px minmax(0, 1fr) 84px; grid-template-areas: "left track right"; column-gap: 10px; }
 }

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Answer, AnswerMode, Project } from "@/domain/schemas";
 import { ReactorAvatar, type ReactorHandle } from "./reactor-avatar";
+import { IntroChat } from "./intro-chat";
+import { PersonaCard } from "./persona-card";
 import { personaMarkdown } from "@/server/persona-markdown";
 
 type ViewProject = Omit<Project, "ownerSession" | "knowledgeBase">;
@@ -83,6 +85,7 @@ export function Studio({ demo }: { demo: boolean }) {
   return <main>
     <header className="topbar"><button className="brand" onClick={() => { stopSpeech(); setProject(undefined); closeReactor(); localStorage.removeItem("human-readme-project"); }}>human<span>readme</span><sup>✦</sup></button><span className={`mode ${demo ? "demo" : ""}`}>{demo ? "Demo playground" : "Live studio"}</span></header>
     {!project ? <section className="hero">
+      <IntroChat />
       <div className="eyebrow">YOUR CODE HAS A CHARACTER</div>
       <h1>Meet the personality<br />behind your <span>repository.</span></h1>
       <p>A README becomes a persona. A persona becomes an Octocat.<br />And suddenly, your repository has something to say.</p>
@@ -93,7 +96,7 @@ export function Studio({ demo }: { demo: boolean }) {
     </section> : <section className="workspace">
       <div className="workspace-heading"><div className="eyebrow">YOUR REPOSITORY, PERSONIFIED</div><h1>{project.repository.name}<span className="dot">.</span></h1><a href={project.repository.url} target="_blank" rel="noreferrer">{project.repository.owner} / {project.repository.name} ↗</a>{project.repository.truncated && <p>README was limited to 60,000 characters.</p>}</div>
       <div className="studio-grid">
-        <article className="card persona"><div className="card-label"><span className="label-title"><span className="step">01</span>Repo DNA</span><button className="text-button" onClick={downloadPersona}>↓ PERSONA.md</button></div><h2>{project.persona.name}</h2><p className="tagline">{project.persona.tagline}</p><div className="chips">{project.persona.traits.map(t => <span key={t}>{t}</span>)}</div><p>{project.persona.backstory}</p><h3>What I believe</h3><ul>{project.persona.convictions.map(c => <li key={c}>{c}</li>)}</ul><h3>How I sound</h3><p>{project.persona.voice.tone}</p><small>Fictional personality · repository facts come from the README</small></article>
+        <PersonaCard persona={project.persona} repository={project.repository} photo={project.avatars.find(a => a.id === project.approvedAvatarId)?.image || avatar?.image || "/api/reference"} onDownload={downloadPersona} />
         <article className="card avatar"><div className="card-label"><span className="label-title"><span className="step">02</span>Find its face</span><span>{project.avatars.length ? `V${project.avatars.indexOf(avatar!) + 1}` : "OCTOCAT DNA"}</span></div><div className={`avatar-stage ${speaking ? "speaking" : ""}`}><img key={avatar?.id ?? "reference"} src={avatar?.image || "/api/reference"} alt="Octocat repository avatar" /><span className="stage-caption">{project.approvedAvatarId === avatar?.id && avatar ? "Your avatar is approved ✦" : project.demo ? "Octocat reference · demo preview" : "A little code. A lot of character."}</span></div>
           {project.avatars.length > 1 && <div className="versions">{project.avatars.map((a, i) => <button key={a.id} className={avatar?.id === a.id ? "active" : ""} onClick={() => setSelected(a.id)} disabled={!!busy}>V{i + 1}</button>)}</div>}
           <form onSubmit={e => { e.preventDefault(); void run("Designing your Octocat…", async () => { const result = await action({ action: "generate", suggestion }); setSelected(result.avatars.at(-1)!.id); setSuggestion(""); }); }}><label htmlFor="suggestion">Give it your own twist</label><textarea id="suggestion" placeholder="A teal hoodie, a curious expression, a tiny rocket…" value={suggestion} onChange={e => setSuggestion(e.target.value)} maxLength={1000} disabled={!!busy} /><div className="actions"><button className="secondary" disabled={!!busy}>{avatar ? "Refine avatar ↻" : "Generate avatar ✦"}</button>{avatar && <button type="button" disabled={!!busy || project.approvedAvatarId === avatar.id} onClick={() => void run("Saving your favorite…", async () => { await action({ action: "approve", avatarId: avatar.id }); })}>This is the one ✓</button>}</div></form>

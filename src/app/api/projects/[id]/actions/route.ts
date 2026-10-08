@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { editPersona, personaPatchSchema } from "@/server/persona-edit";
 import { loadProject, saveProject, publicProject } from "@/server/store";
 import { checkOrigin, failure, readBody, sessionId } from "@/server/http";
 import { createAvatar } from "@/server/providers/image";
@@ -10,6 +11,7 @@ import { synthesizeSpeech } from "@/server/providers/speech";
 
 export const runtime = "nodejs";
 const actionSchema = z.discriminatedUnion("action", [
+  z.object({ action: z.literal("persona"), persona: personaPatchSchema }),
   z.object({ action: z.literal("generate"), suggestion: z.string().max(1000).default("") }),
   z.object({ action: z.literal("approve"), avatarId: z.string().uuid() }),
   z.object({ action: z.literal("chat"), question: z.string().trim().min(1).max(2000), mode: z.enum(["flash", "pro"]).default("flash") }),
@@ -31,7 +33,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     }
     if (input.action === "speech") return NextResponse.json(await synthesizeSpeech(project, input.text), { headers: { "Cache-Control": "no-store" } });
     if (input.action === "session") return NextResponse.json(await createReactorSession(project), { headers: { "Cache-Control": "no-store" } });
-    if (input.action === "generate") {
+    if (input.action === "persona") {
+      project.persona = editPersona(project.persona, input.persona);
+    } else if (input.action === "generate") {
       if (project.avatars.length >= 20) throw new Error("This starter supports 20 avatar versions per project.");
       project.avatars.push(await createAvatar(project, input.suggestion));
       project.approvedAvatarId = undefined;

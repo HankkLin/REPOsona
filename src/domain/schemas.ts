@@ -8,6 +8,12 @@ export const personaSchema = z.object({
   convictions: z.array(z.string().max(300)).max(6),
   speakingStyle: z.string().max(500),
   visualPrompt: z.string().max(2000),
+  // User-research persona fields; optional so personas saved before they existed still load.
+  archetype: z.string().max(80).optional(),
+  audience: z.string().max(300).optional(),
+  goals: z.array(z.string().max(200)).max(4).optional(),
+  frustrations: z.array(z.string().max(200)).max(4).optional(),
+  dna: z.object({ stability: z.number().min(0).max(100), strictness: z.number().min(0).max(100), playfulness: z.number().min(0).max(100) }).optional(),
   voice: z.object({ language: z.string().max(30), tone: z.string().max(200), rate: z.number().min(0.5).max(1.5), pitch: z.number().min(0.5).max(1.5), name: z.enum(["Kore", "Puck", "Charon", "Aoede", "Fenrir", "Leda", "Orus", "Zephyr"]).optional() }),
 });
 export type Persona = z.infer<typeof personaSchema>;
